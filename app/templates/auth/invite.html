@@ -3,26 +3,34 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <div class="page-title">Convidar membros</div>
+    <h1 class="page-title">Convidar membros</h1>
     <div class="page-subtitle">Partilhe o link abaixo com os membros da família</div>
   </div>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-ghost">
+    <span aria-hidden="true">←</span> Voltar
+  </a>
 </div>
-<div class="card" style="max-width:560px;">
-  <div class="card-title">Link de convite</div>
-  <div style="display:flex;gap:10px;align-items:center;">
-    <input type="text" class="form-control mono" value="{{ invite_url }}" id="inviteUrl" readonly style="font-size:12px;">
-    <button class="btn btn-primary" onclick="copyLink()" style="white-space:nowrap;">Copiar</button>
+
+<main class="card mx-auto" style="max-width:560px;">
+  <h2 class="card-title">Link de convite</h2>
+  <div class="flex gap-2 items-center">
+    <label for="inviteUrl" class="sr-only">URL de convite</label>
+    <input type="text" class="form-control mono text-sm w-full" value="{{ invite_url }}" id="inviteUrl" readonly>
+    <button type="button" class="btn btn-primary" onclick="copyLink()" style="white-space:nowrap;"
+      aria-live="polite">Copiar</button>
   </div>
-  <div style="color:var(--muted);font-size:13px;margin-top:14px;">
-    ⚠️ Qualquer pessoa com este link pode criar uma conta na sua família. Partilhe apenas com pessoas de confiança.
+  <div class="text-muted text-sm mt-4">
+    <span aria-hidden="true">⚠️</span> Qualquer pessoa com este link pode criar uma conta na sua família. Partilhe
+    apenas com pessoas de confiança.
   </div>
-</div>
+</main>
 <script>
-function copyLink() {
-  navigator.clipboard.writeText(document.getElementById('inviteUrl').value);
-  const btn = event.target;
-  btn.textContent = '✓ Copiado!';
-  setTimeout(() => btn.textContent = 'Copiar', 2000);
-}
+  function copyLink() {
+    const input = document.getElementById('inviteUrl');
+    navigator.clipboard.writeText(input.value);
+    const btn = event.target;
+    btn.textContent = '✓ Copiado!';
+    setTimeout(() => btn.textContent = 'Copiar', 2000);
+  }
 </script>
 {% endblock %}

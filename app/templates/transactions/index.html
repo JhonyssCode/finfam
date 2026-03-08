@@ -3,144 +3,212 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <div class="page-title">Transações</div>
+    <h1 class="page-title">Transações</h1>
     <div class="page-subtitle">Todas as entradas e saídas</div>
   </div>
-  <div style="display:flex;gap:8px;">
-    <a href="{{ url_for('transactions.export_csv', type=type_filter, scope=scope_filter, category=category_filter, month=month_filter, year=year_filter) }}" class="btn btn-ghost">↓ Exportar CSV</a>
-    <a href="{{ url_for('transactions.new') }}" class="btn btn-primary">+ Nova transação</a>
+  <div class="flex gap-2">
+    <a href="{{ url_for('transactions.export_csv', type=type_filter, scope=scope_filter, category=category_filter, month=month_filter, year=year_filter) }}"
+      class="btn btn-ghost">
+      <span aria-hidden="true">↓</span> Exportar CSV
+    </a>
+
+    <a href="{{ url_for('transactions.import_ofx') }}" class="btn btn-ghost">
+      <span aria-hidden="true">↑</span> Importar Extrato (OFX/CSV)
+    </a>
+
+    <a href="{{ url_for('transactions.new') }}" class="btn btn-primary">
+      <span aria-hidden="true">+</span> Nova transação
+    </a>
   </div>
 </div>
 
 <!-- Filters -->
-<div class="card" style="margin-bottom:16px;padding:16px 20px;">
-  <form method="GET" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-    <div>
-      <label class="form-label">Ano</label>
-      <select name="year" class="form-control" style="width:100px;">
+<section class="card mb-4" aria-label="Filtros de transação">
+  <form method="GET" class="form-filters" hx-get="{{ request.path }}" hx-target="#content-container"
+    hx-select="#content-container" hx-push-url="true" hx-trigger="change">
+    <div class="form-group flex-col mb-0" style="flex: 2; min-width: 200px;">
+      <label for="filter-q" class="form-label">Buscar / Pesquisar</label>
+      <input type="search" id="filter-q" name="q" class="form-control" placeholder="Ex: Supermercado..."
+        value="{{ q_filter or '' }}" hx-get="{{ request.path }}" hx-target="#content-container"
+        hx-select="#content-container" hx-trigger="keyup changed delay:500ms" hx-push-url="true">
+    </div>
+    <div class="form-group flex-col mb-0">
+      <label for="filter-year" class="form-label">Ano</label>
+      <select id="filter-year" name="year" class="form-control w-sm">
         <option value="">Todos</option>
         {% for y in years %}
         <option value="{{ y }}" {% if year_filter==y|string %}selected{% endif %}>{{ y }}</option>
         {% endfor %}
       </select>
     </div>
-    <div>
-      <label class="form-label">Mês</label>
-      <select name="month" class="form-control" style="width:120px;">
+    <div class="form-group flex-col mb-0">
+      <label for="filter-month" class="form-label">Mês</label>
+      <select id="filter-month" name="month" class="form-control w-md">
         <option value="">Todos</option>
-        {% for m, n in [(1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),(4,'Abril'),(5,'Maio'),(6,'Junho'),(7,'Julho'),(8,'Agosto'),(9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro')] %}
+        {% for m, n in
+        [(1,'Janeiro'),(2,'Fevereiro'),(3,'Março'),(4,'Abril'),(5,'Maio'),(6,'Junho'),(7,'Julho'),(8,'Agosto'),(9,'Setembro'),(10,'Outubro'),(11,'Novembro'),(12,'Dezembro')]
+        %}
         <option value="{{ m }}" {% if month_filter==m|string %}selected{% endif %}>{{ n }}</option>
         {% endfor %}
       </select>
     </div>
-    <div>
-      <label class="form-label">Tipo</label>
-      <select name="type" class="form-control" style="width:120px;">
+    <div class="form-group flex-col mb-0">
+      <label for="filter-type" class="form-label">Tipo</label>
+      <select id="filter-type" name="type" class="form-control w-md">
         <option value="" {% if not type_filter %}selected{% endif %}>Todos</option>
         <option value="income" {% if type_filter=='income' %}selected{% endif %}>Receitas</option>
         <option value="expense" {% if type_filter=='expense' %}selected{% endif %}>Despesas</option>
       </select>
     </div>
-    <div>
-      <label class="form-label">Âmbito</label>
-      <select name="scope" class="form-control" style="width:120px;">
+    <div class="form-group flex-col mb-0">
+      <label for="filter-scope" class="form-label">Âmbito</label>
+      <select id="filter-scope" name="scope" class="form-control w-md">
         <option value="" {% if not scope_filter %}selected{% endif %}>Todos</option>
         <option value="personal" {% if scope_filter=='personal' %}selected{% endif %}>Pessoal</option>
         <option value="family" {% if scope_filter=='family' %}selected{% endif %}>Família</option>
       </select>
     </div>
-    <div>
-      <label class="form-label">Categoria</label>
-      <select name="category" class="form-control" style="width:150px;">
+    <div class="form-group flex-col mb-0">
+      <label for="filter-category" class="form-label">Categoria</label>
+      <select id="filter-category" name="category" class="form-control w-lg">
         <option value="">Todas</option>
         {% for cat in categories %}
-        <option value="{{ cat.id }}" {% if category_filter == cat.id|string %}selected{% endif %}>{{ cat.icon }} {{ cat.name }}</option>
+        <option value="{{ cat.id }}" {% if category_filter==cat.id|string %}selected{% endif %}>{{ cat.icon }} {{
+          cat.name }}</option>
         {% endfor %}
       </select>
     </div>
-    <button type="submit" class="btn btn-ghost">Filtrar</button>
-    <a href="{{ url_for('transactions.index') }}" class="btn btn-ghost">Limpar</a>
+    <div class="form-group flex-row mb-0 gap-2">
+      <button type="submit" class="btn btn-ghost">Filtrar</button>
+      <a href="{{ url_for('transactions.index') }}" class="btn btn-ghost" hx-get="{{ url_for('transactions.index') }}"
+        hx-target="#content-container" hx-select="#content-container" hx-push-url="true">Limpar</a>
+    </div>
   </form>
-</div>
+</section>
 
 <!-- Totals bar -->
-<div style="display:flex;gap:12px;margin-bottom:16px;">
-  <div style="background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);border-radius:var(--radius-sm);padding:10px 18px;flex:1;">
-    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;">Receitas filtradas</div>
-    <div class="mono" style="font-size:20px;color:var(--income);font-weight:600;margin-top:2px;">+{{ total_income|brl }}</div>
+<section class="totals-bar" aria-label="Resumo">
+  <div class="total-card total-card-income">
+    <div class="total-label">Receitas filtradas</div>
+    <div class="mono total-value text-income">+{{ total_income|brl }}</div>
   </div>
-  <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);border-radius:var(--radius-sm);padding:10px 18px;flex:1;">
-    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;">Despesas filtradas</div>
-    <div class="mono" style="font-size:20px;color:var(--expense);font-weight:600;margin-top:2px;">-{{ total_expense|brl }}</div>
+  <div class="total-card total-card-expense">
+    <div class="total-label">Despesas filtradas</div>
+    <div class="mono total-value text-expense">-{{ total_expense|brl }}</div>
   </div>
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 18px;flex:1;">
-    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;">Saldo filtrado</div>
+  <div class="total-card total-card-balance">
+    <div class="total-label">Saldo filtrado</div>
     {% set bal = total_income - total_expense %}
-    <div class="mono" style="font-size:20px;color:{% if bal >= 0 %}var(--income){% else %}var(--expense){% endif %};font-weight:600;margin-top:2px;">{{ bal|brl }}</div>
+    <div class="mono total-value {% if bal >= 0 %}text-income{% else %}text-expense{% endif %}">{{ bal|brl }}</div>
   </div>
-</div>
+</section>
 
-<div class="card">
+<section class="card" aria-label="Lista de transações">
   {% if transactions.items %}
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Descrição</th>
-        <th>Categoria</th>
-        <th>Data</th>
-        <th>Âmbito</th>
-        <th>Por</th>
-        <th style="text-align:right">Valor</th>
-        <th style="width:90px;"></th>
-      </tr>
-    </thead>
-    <tbody>
-    {% for t in transactions.items %}
-    <tr>
-      <td style="font-weight:500;">{{ t.description }}</td>
-      <td>
-        {% if t.category %}
-        <span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--muted);">
-          <span style="width:8px;height:8px;border-radius:50%;background:{{ t.category.color }};display:inline-block;"></span>
-          {{ t.category.icon }} {{ t.category.name }}
-        </span>
-        {% else %}<span style="color:var(--muted);font-size:13px;">—</span>{% endif %}
-      </td>
-      <td class="mono" style="font-size:13px;color:var(--muted);">{{ t.date.strftime('%d/%m/%Y') }}</td>
-      <td><span class="badge badge-{{ t.scope }}">{{ 'Pessoal' if t.scope == 'personal' else '👨‍👩‍👧 Família' }}</span></td>
-      <td style="font-size:13px;color:var(--muted);">{{ t.user.name.split()[0] }}</td>
-      <td style="text-align:right;">
-        <span class="amount-{{ t.type }}">{{ '+' if t.type == 'income' else '-' }}{{ t.amount|brl }}</span>
-      </td>
-      <td>
-        <div style="display:flex;gap:4px;justify-content:flex-end;">
-          <a href="{{ url_for('transactions.edit', id=t.id) }}" class="btn btn-ghost btn-sm">✎</a>
-          <form method="POST" action="{{ url_for('transactions.delete', id=t.id) }}" onsubmit="return confirm('Eliminar esta transação?')">
-            <button type="submit" class="btn btn-danger btn-sm">✕</button>
-          </form>
-        </div>
-      </td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-
-  <div class="pagination">
-    {% if transactions.has_prev %}
-    <a href="{{ url_for('transactions.index', page=transactions.prev_num, type=type_filter, scope=scope_filter, category=category_filter, month=month_filter, year=year_filter) }}">← Anterior</a>
-    {% endif %}
-    <span class="current">{{ transactions.page }} / {{ transactions.pages }}</span>
-    {% if transactions.has_next %}
-    <a href="{{ url_for('transactions.index', page=transactions.next_num, type=type_filter, scope=scope_filter, category=category_filter, month=month_filter, year=year_filter) }}">Próxima →</a>
-    {% endif %}
-    <span style="color:var(--muted);font-size:13px;margin-left:8px;">{{ transactions.total }} registos</span>
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">Descrição</th>
+          <th scope="col">Categoria</th>
+          <th scope="col">Data</th>
+          <th scope="col">Âmbito</th>
+          <th scope="col">Por</th>
+          <th scope="col" class="text-right">Valor</th>
+          <th scope="col" style="width:90px;">
+            <span class="sr-only">Ações</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in transactions.items %}
+        <tr>
+          <td class="font-medium">{{ t.description }}</td>
+          <td>
+            {% if t.category %}
+            <span class="flex items-center gap-1 text-sm text-muted">
+              <span
+                style="width:8px;height:8px;border-radius:50%;background:{{ t.category.color }};display:inline-block;"
+                aria-hidden="true"></span>
+              <span aria-hidden="true">{{ t.category.icon }}</span> {{ t.category.name }}
+            </span>
+            {% else %}<span class="text-muted text-sm">—</span>{% endif %}
+          </td>
+          <td class="mono text-sm text-muted">{{ t.date.strftime('%d/%m/%Y') }}</td>
+          <td><span class="badge badge-{{ t.scope }}">{{ 'Pessoal' if t.scope == 'personal' else '👨‍👩‍👧 Família'
+              }}</span></td>
+          <td class="text-sm text-muted">{{ t.user.name.split()[0] }}</td>
+          <td class="text-right">
+            <span class="amount-{{ t.type }}">{{ '+' if t.type == 'income' else '-' }}{{ t.amount|brl }}</span>
+          </td>
+          <td>
+            <div class="flex gap-1 justify-between text-right">
+              <a href="{{ url_for('transactions.edit', id=t.id) }}" class="btn btn-ghost btn-sm"
+                aria-label="Editar transação">✎</a>
+              <form method="POST" action="{{ url_for('transactions.delete', id=t.id) }}"
+                data-confirm="Tem a certeza que quer eliminar esta transação? Esta ação não pode ser desfeita.">
+                <button type="submit" class="btn btn-danger btn-sm" aria-label="Eliminar transação">✕</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
+
+  <nav class="pagination" aria-label="Paginação">
+    {% if transactions.has_prev %}
+    <a href="{{ url_for('transactions.index', page=transactions.prev_num, type=type_filter, scope=scope_filter, category=category_filter, month=month_filter, year=year_filter) }}"
+      hx-get="{{ url_for('transactions.index', page=transactions.prev_num, type=type_filter, scope=scope_filter, category=category_filter, month=month_filter, year=year_filter) }}"
+      hx-target="#content-container" hx-select="#content-container" hx-push-url="true" aria-label="Página anterior">
+      ← Anterior
+    </a>
+    {% endif %}
+
+    <span class="current" aria-current="page">{{ transactions.page }} <span class="sr-only">de</span> <span
+        aria-hidden="true">/</span> {{ transactions.pages }}</span>
+
+    {% if transactions.has_next %}
+    <a href="{{ url_for('transactions.index', page=transactions.next_num, type=type_filter, scope=scope_filter, category=category_filter, month=month_filter, year=year_filter) }}"
+      hx-get="{{ url_for('transactions.index', page=transactions.next_num, type=type_filter, scope=scope_filter, category=category_filter, month=month_filter, year=year_filter) }}"
+      hx-target="#content-container" hx-select="#content-container" hx-push-url="true" aria-label="Próxima página">
+      Próxima →
+    </a>
+    {% endif %}
+    <span class="text-sm text-muted" style="margin-left:8px;">{{ transactions.total }} registos</span>
+  </nav>
   {% else %}
   <div class="empty-state">
-    <div class="icon">↔️</div>
+    <div class="icon" aria-hidden="true">↔️</div>
     <p>Nenhuma transação encontrada</p>
-    <a href="{{ url_for('transactions.new') }}" class="btn btn-primary" style="margin-top:16px;">+ Adicionar transação</a>
+    <a href="{{ url_for('transactions.new') }}" class="btn btn-primary" style="margin-top:16px;">
+      <span aria-hidden="true">+</span> Adicionar transação
+    </a>
   </div>
   {% endif %}
-</div>
+</section>
+
+{% block extra_styles %}
+<style>
+  .text-income {
+    color: var(--income);
+  }
+
+  .text-expense {
+    color: var(--expense);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+  }
+</style>
+{% endblock %}
 {% endblock %}

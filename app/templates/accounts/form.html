@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{% if account %}Editar Conta{% else %}Nova Conta{% endif %} - FinFam{% endblock %}
+{% block header_title %}{% if account %}Editar Conta{% else %}Nova Conta{% endif %}{% endblock %}
+
+{% block content %}
+<section aria-labelledby="form-heading" class="card mx-auto w-lg">
+    <h2 id="form-heading" class="text-xl font-bold mb-4">Detalhes da Conta</h2>
+
+    <form method="POST" action="{{ form_action }}">
+        <div class="form-group">
+            <label for="name" class="form-label">Nome ou Referência</label>
+            <input type="text" id="name" name="name" class="form-control" required
+                value="{{ account.name if account else '' }}" placeholder="Ex: Nubank, Carteira Física, Santander">
+        </div>
+
+        <div class="form-group mt-3">
+            <label for="type" class="form-label">Tipo de Conta</label>
+            <select id="type" name="type" class="form-control" required>
+                <option value="checking" {% if account and account.type=='checking' %}selected{% endif %}>Corrente
+                    (Checking)</option>
+                <option value="savings" {% if account and account.type=='savings' %}selected{% endif %}>Poupança
+                    (Savings)</option>
+                <option value="investment" {% if account and account.type=='investment' %}selected{% endif %}>
+                    Investimento</option>
+                <option value="cash" {% if account and account.type=='cash' %}selected{% endif %}>Dinheiro Físico
+                </option>
+            </select>
+        </div>
+
+        <div class="form-group mt-3">
+            <label for="initial_balance" class="form-label">Saldo Inicial (Opcional)</label>
+            <input type="number" id="initial_balance" name="initial_balance" class="form-control" step="0.01"
+                value="{{ account.initial_balance if account else 0.0 }}">
+            <p class="text-xs text-muted mt-1">Este valor será a âncora para os cálculos de extrato antes de
+                contabilizar as transações.</p>
+        </div>
+
+        <div class="flex items-center gap-3 mt-5">
+            <button type="submit" class="btn btn-primary w-full">Gravar Conta</button>
+            <a href="{{ url_for('accounts.index') }}" class="btn btn-ghost w-full text-center">Cancelar</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

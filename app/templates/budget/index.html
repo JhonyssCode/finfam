@@ -3,55 +3,67 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <div class="page-title">Orçamento — {{ month_name }} {{ year }}</div>
+    <h1 class="page-title">Orçamento — {{ month_name }} {{ year }}</h1>
     <div class="page-subtitle">Defina e acompanhe os limites por categoria</div>
   </div>
-  <div style="display:flex;gap:8px;align-items:center;">
-    <a href="{{ url_for('budget.index', month=prev_month, year=prev_year) }}" class="btn btn-ghost">← Mês anterior</a>
-    <a href="{{ url_for('budget.index', month=next_month, year=next_year) }}" class="btn btn-ghost">Próximo →</a>
+  <div class="flex items-center gap-2">
+    <a href="{{ url_for('budget.index', month=prev_month, year=prev_year) }}" class="btn btn-ghost"
+      hx-get="{{ url_for('budget.index', month=prev_month, year=prev_year) }}" hx-target="#content-container"
+      hx-select="#content-container" hx-push-url="true">
+      <span aria-hidden="true">←</span> Mês anterior
+    </a>
+    <a href="{{ url_for('budget.index', month=next_month, year=next_year) }}" class="btn btn-ghost"
+      hx-get="{{ url_for('budget.index', month=next_month, year=next_year) }}" hx-target="#content-container"
+      hx-select="#content-container" hx-push-url="true">
+      Próximo <span aria-hidden="true">→</span>
+    </a>
   </div>
 </div>
 
 <!-- Alerts for over-budget categories -->
 {% if alerts %}
-<div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;display:flex;align-items:center;gap:12px;">
-  <span style="font-size:20px;">⚠️</span>
-  <div>
-    <div style="font-weight:600;color:var(--expense);font-size:14px;">Orçamento ultrapassado</div>
-    <div style="font-size:13px;color:var(--muted);margin-top:2px;">
-      {{ alerts|map(attribute='icon')|join(' ') }}
-      {% for a in alerts %}{{ a.name }}{% if not loop.last %}, {% endif %}{% endfor %}
-      {% if alerts|length == 1 %}ultrapassou{% else %}ultrapassaram{% endif %} o limite definido.
+<section class="notification-container mb-4" aria-label="Avisos de orçamento excedido">
+  <div class="notification-stripe notification-danger" role="alert">
+    <span class="notification-icon" aria-hidden="true">⚠️</span>
+    <div class="flex-col">
+      <div class="font-bold text-expense text-sm">Orçamento ultrapassado</div>
+      <div class="text-sm text-muted mt-1">
+        <span aria-hidden="true">{{ alerts|map(attribute='icon')|join(' ') }}</span>
+        {% for a in alerts %}{{ a.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+        {% if alerts|length == 1 %}ultrapassou{% else %}ultrapassaram{% endif %} o limite definido.
+      </div>
     </div>
   </div>
-</div>
+</section>
 {% endif %}
 
 <!-- Summary cards -->
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;">
+<section class="stats-grid mb-6" aria-label="Resumo do orçamento">
   <div class="stat-card">
-    <div class="stat-label">Total orçamentado</div>
-    <div class="stat-value" style="color:var(--accent3);font-size:22px;">{{ total_budgeted|brl }}</div>
+    <h2 class="stat-label">Total orçamentado</h2>
+    <div class="stat-value text-primary font-bold">{{ total_budgeted|brl }}</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">Total gasto</div>
-    <div class="stat-value expense" style="font-size:22px;">{{ total_spent|brl }}</div>
+    <h2 class="stat-label">Total gasto</h2>
+    <div class="stat-value text-expense font-bold">{{ total_spent|brl }}</div>
   </div>
   <div class="stat-card">
-    <div class="stat-label">Margem restante</div>
+    <h2 class="stat-label">Margem restante</h2>
     {% set margin = total_budgeted - total_spent %}
-    <div class="stat-value {% if margin >= 0 %}income{% else %}expense{% endif %}" style="font-size:22px;">{{ margin|brl }}</div>
+    <div class="stat-value {% if margin >= 0 %}text-income{% else %}text-expense{% endif %} font-bold">{{ margin|brl }}
+    </div>
   </div>
-</div>
+</section>
 
-<div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-    <div class="card-title" style="margin:0;">Categorias</div>
-    <form method="POST" action="{{ url_for('budget.copy_prev') }}" style="margin:0;">
+<section class="card" aria-label="Limites por categoria">
+  <div class="card-header">
+    <h2 class="card-title no-margin">Categorias</h2>
+    <form method="POST" action="{{ url_for('budget.copy_prev') }}" class="mb-0">
       <input type="hidden" name="month" value="{{ month }}">
       <input type="hidden" name="year" value="{{ year }}">
-      <button type="submit" class="btn btn-ghost btn-sm" title="Copiar orçamentos do mês anterior">
-        ⬆️ Copiar do mês anterior
+      <button type="submit" class="btn btn-ghost btn-sm" aria-label="Copiar orçamentos do mês anterior"
+        title="Copiar orçamentos do mês anterior">
+        <span aria-hidden="true">⬆️</span> Copiar do mês anterior
       </button>
     </form>
   </div>
@@ -59,71 +71,88 @@
   <form method="POST" action="{{ url_for('budget.save') }}">
     <input type="hidden" name="month" value="{{ month }}">
     <input type="hidden" name="year" value="{{ year }}">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Categoria</th>
-          <th style="width:150px;">Orçamento (R$)</th>
-          <th style="width:130px;">Gasto (R$)</th>
-          <th>Progresso</th>
-          <th style="width:80px;">Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-      {% for cat in categories %}
-      {% set budget = budgets.get(cat.id) %}
-      {% set spent = spent_map.get(cat.id, 0) %}
-      {% set bval = budget.amount if budget else 0 %}
-      {% set pct = [[((spent / bval * 100) if bval > 0 else 0), 0]|max, 100]|min %}
-      {% set over = bval > 0 and spent > bval %}
-      <tr style="{% if over %}background:rgba(248,113,113,0.03);{% endif %}">
-        <td>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:10px;height:10px;border-radius:50%;background:{{ cat.color }};flex-shrink:0;"></div>
-            <span style="font-size:17px;">{{ cat.icon }}</span>
-            <span style="font-weight:500;">{{ cat.name }}</span>
-          </div>
-        </td>
-        <td>
-          <input type="number" name="budget_{{ cat.id }}" class="form-control mono"
-            style="width:130px;padding:7px 10px;"
-            step="0.01" min="0" placeholder="—"
-            value="{{ bval|brl if bval else '' }}">
-        </td>
-        <td class="mono" style="font-size:14px;color:{% if over %}var(--expense){% else %}var(--muted){% endif %};">
-          {{ spent|brl }}
-        </td>
-        <td style="min-width:140px;">
-          {% if bval > 0 %}
-          <div class="progress" style="margin-bottom:3px;">
-            <div class="progress-bar" style="width:{{ pct }}%;background:{% if pct >= 100 %}var(--expense){% elif pct >= 80 %}var(--warning){% else %}var(--income){% endif %};"></div>
-          </div>
-          <div style="font-size:11px;color:var(--muted);">
-            {{ '%.0f'|format(pct) }}%
-            {% if bval > 0 %}· resta {{ bval - spent|brl }}{% endif %}
-          </div>
-          {% else %}
-          <span style="color:var(--muted);font-size:13px;">Sem limite definido</span>
-          {% endif %}
-        </td>
-        <td style="text-align:center;">
-          {% if bval == 0 %}
-            <span style="font-size:18px;" title="Sem orçamento">—</span>
-          {% elif over %}
-            <span style="font-size:18px;" title="Ultrapassado">🔴</span>
-          {% elif pct >= 80 %}
-            <span style="font-size:18px;" title="Atenção">🟡</span>
-          {% else %}
-            <span style="font-size:18px;" title="OK">🟢</span>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-    <div style="margin-top:20px;">
-      <button type="submit" class="btn btn-primary">💾 Guardar orçamento</button>
+
+    <div class="table-responsive">
+      <table class="table">
+        <caption class="sr-only">Tabela interativa de orçamentos mensais</caption>
+        <thead>
+          <tr>
+            <th scope="col">Categoria</th>
+            <th scope="col" style="width:150px;">Orçamento (R$)</th>
+            <th scope="col" style="width:130px;">Gasto (R$)</th>
+            <th scope="col">Progresso</th>
+            <th scope="col" class="text-center" style="width:80px;">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cat in categories %}
+          {% set budget = budgets.get(cat.id) %}
+          {% set spent = spent_map.get(cat.id, 0) %}
+          {% set bval = budget.amount if budget else 0 %}
+          {% set pct = [[((spent / bval * 100) if bval > 0 else 0), 0]|max, 100]|min %}
+          {% set over = bval > 0 and spent > bval %}
+          <tr class="{% if over %}bg-danger-light{% endif %}">
+            <td>
+              <div class="flex items-center gap-2 font-medium">
+                <div class="cat-dot" style="background:{{ cat.color }};" aria-hidden="true"></div>
+                <span class="text-base" aria-hidden="true">{{ cat.icon }}</span>
+                <span>{{ cat.name }}</span>
+              </div>
+            </td>
+            <td>
+              <label for="budget_{{ cat.id }}" class="sr-only">Orçamento para {{ cat.name }}</label>
+              <input type="number" id="budget_{{ cat.id }}" name="budget_{{ cat.id }}" class="form-control mono"
+                style="width:130px;padding:7px 10px;" step="0.01" min="0" placeholder="—"
+                value="{{ bval|brl if bval else '' }}">
+            </td>
+            <td class="mono text-base {% if over %}text-expense{% else %}text-muted{% endif %}">
+              {{ spent|brl }}
+            </td>
+            <td style="min-width:140px;">
+              {% if bval > 0 %}
+              <div class="progress mb-1" role="progressbar" aria-valuenow="{{ pct }}" aria-valuemin="0"
+                aria-valuemax="100">
+                <div class="progress-bar"
+                  style="width:{{ pct }}%;background:{% if pct >= 100 %}var(--expense){% elif pct >= 80 %}var(--warning){% else %}var(--income){% endif %};">
+                </div>
+              </div>
+              <div class="text-xs text-muted mt-1">
+                {{ '%.0f'|format(pct) }}%
+                {% if bval > 0 %}· resta {{ bval - spent|brl }}{% endif %}
+              </div>
+              {% else %}
+              <span class="text-muted text-sm">Sem limite definido</span>
+              {% endif %}
+            </td>
+            <td class="text-center" aria-label="Status">
+              {% if bval == 0 %}
+              <span class="text-base" title="Sem orçamento">—</span>
+              {% elif over %}
+              <span class="text-base" title="Ultrapassado">🔴</span>
+              {% elif pct >= 80 %}
+              <span class="text-base" title="Atenção">🟡</span>
+              {% else %}
+              <span class="text-base" title="OK">🟢</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="mt-4">
+      <button type="submit" class="btn btn-primary" aria-label="Salvar Orçamento">
+        <span aria-hidden="true">💾</span> Guardar orçamento
+      </button>
     </div>
   </form>
-</div>
+</section>
+
+{% block extra_styles %}
+<style>
+  .bg-danger-light {
+    background: rgba(248, 113, 113, 0.03);
+  }
+</style>
+{% endblock %}
 {% endblock %}

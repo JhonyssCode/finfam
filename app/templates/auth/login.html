@@ -1,34 +1,36 @@
 {% extends 'base.html' %}
 {% block title %}Login — FinFam{% endblock %}
 {% block content %}
-<div style="width:380px;">
-  <div style="text-align:center; margin-bottom:32px;">
-    <div style="font-size:32px; font-weight:700; color:var(--accent); letter-spacing:-1px;">💚 FinFam</div>
-    <div style="color:var(--muted); font-size:14px; margin-top:6px;">Controlo financeiro familiar</div>
-  </div>
-  <div class="card">
-    <div class="card-title">Entrar na sua conta</div>
-    <div class="form-group">
-      <form method="POST">
-        <div class="form-group">
-          <label class="form-label">Email</label>
-          <input type="email" name="email" class="form-control" required autofocus>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Password</label>
-          <input type="password" name="password" class="form-control" required>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;">
-            <input type="checkbox" name="remember"> Lembrar-me
-          </label>
-        </div>
-        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Entrar</button>
-      </form>
+<div class="mx-auto" style="width:100%; max-width:380px;">
+  <header class="text-center mb-6">
+    <div class="text-income font-bold" style="font-size:32px; letter-spacing:-1px;" aria-hidden="true">💚 FinFam</div>
+    <p class="text-muted text-sm mt-2">Controle financeiro familiar</p>
+  </header>
+
+  <main class="card">
+    <h1 class="card-title text-center" style="font-size:16px;">Entrar na sua conta</h1>
+    <form method="POST">
+      <div class="form-group">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" id="email" name="email" class="form-control" autocomplete="email" required autofocus>
+      </div>
+      <div class="form-group">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" id="password" name="password" class="form-control" autocomplete="current-password"
+          required>
+      </div>
+      <div class="flex items-center justify-between mb-4">
+        <label class="flex items-center gap-2 text-sm text-muted cursor-pointer" style="cursor:pointer;">
+          <input type="checkbox" name="remember"> Lembrar-me
+        </label>
+      </div>
+      <button type="submit" class="btn btn-primary w-full justify-center">Entrar</button>
+    </form>
+
+    <div class="text-center mt-4 text-sm text-muted">
+      Não tem conta? <a href="{{ url_for('auth.register') }}" class="text-primary font-medium"
+        style="text-decoration:none;">Criar família</a>
     </div>
-    <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--muted);">
-      Não tem conta? <a href="{{ url_for('auth.register') }}" style="color:var(--accent3);">Criar família</a>
-    </div>
-  </div>
+  </main>
 </div>
 {% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Importar OFX/CSV — FinFam{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Importar Extrato Bancário</h1>
+        <div class="page-subtitle">Sincronize transações de arquivos (.ofx ou .csv)</div>
+    </div>
+</div>
+
+<section class="card mx-auto w-lg" aria-label="Formulário de importação">
+    <form method="POST" enctype="multipart/form-data" action="{{ url_for('transactions.import_ofx') }}">
+        <div class="form-group">
+            <label for="account-select" class="form-label">Selecionar Conta Destino</label>
+            <select id="account-select" name="account_id" class="form-control" required>
+                <option value="" disabled selected>— Escolha a conta —</option>
+                {% for acc in accounts %}
+                <option value="{{ acc.id }}">{{ acc.name }} ({{ acc.type|title }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group mt-4">
+            <label for="file-upload" class="form-label">Arquivo de Extrato (.ofx ou .csv)</label>
+            <input type="file" id="file-upload" name="file" class="form-control" accept=".ofx,.csv" required>
+        </div>
+
+        <div class="form-group mt-4">
+            <p class="text-sm text-muted"><strong>Atenção:</strong> Transações ignoram entradas com o mesmo valor, mesma
+                data e mesma conta enviadas para não duplicar de faturas antigas.</p>
+        </div>
+
+        <div class="flex items-center gap-3 mt-5">
+            <button type="submit" class="btn btn-primary w-full">Analisar e Sincronizar</button>
+            <a href="{{ url_for('transactions.index') }}" class="btn btn-ghost w-full text-center">Cancelar</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

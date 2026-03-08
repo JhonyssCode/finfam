@@ -86,10 +86,16 @@ def index():
         .order_by(Transaction.date.desc(), Transaction.created_at.desc())\
         .limit(8).all()
 
+    # Accounts overview summing balances
+    from ..models import BankAccount
+    accounts = BankAccount.query.filter_by(family_id=family_id).all()
+    accounts_balance = sum(acc.current_balance for acc in accounts)
+
     return render_template('dashboard/index.html',
         income=income, expense=expense, balance=balance,
         months_data=months_data, upcoming_bills=upcoming_bills,
         overdue_count=overdue_count, due_soon_count=due_soon_count,
         cat_breakdown=cat_breakdown, budget_alerts=budget_alerts,
-        recent=recent, today=today
+        recent=recent, today=today,
+        accounts=accounts, accounts_balance=accounts_balance
     )

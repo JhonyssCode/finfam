@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Contas - FinFam{% endblock %}
+{% block header_title %}Suas Contas{% endblock %}
+
+{% block content %}
+<section aria-labelledby="accounts-heading">
+    <div class="flex items-center gap-4 mb-4" style="justify-content: space-between;">
+        <h2 id="accounts-heading" class="text-xl font-bold">Contas Bancárias / Carteiras</h2>
+        <a href="{{ url_for('accounts.new') }}" class="btn btn-primary">Nova Conta</a>
+    </div>
+
+    <div class="grid-3" aria-label="Lista de contas">
+        {% for acc in accounts %}
+        <article class="card p-4 transition-hover">
+            <div class="flex items-center gap-3 mb-2" style="justify-content: space-between;">
+                <h3 class="font-medium text-base mb-0">{{ acc.name }}</h3>
+                <span class="badge" style="border: 1px solid var(--border);">{{ acc.type | title }}</span>
+            </div>
+
+            <p class="text-2xl font-bold mt-2"
+                style="color: {% if acc.current_balance >= 0 %}var(--income){% else %}var(--expense){% endif %}">
+                {{ acc.current_balance | brl }}
+            </p>
+
+            <div class="flex items-center gap-2 mt-4" style="justify-content: flex-end;">
+                <a href="{{ url_for('accounts.edit', id=acc.id) }}" class="btn btn-ghost text-sm p-1"
+                    aria-label="Editar conta {{ acc.name }}">
+                    ✎
+                </a>
+                <form method="POST" action="{{ url_for('accounts.delete', id=acc.id) }}" style="display:inline;">
+                    <button type="button" class="btn btn-ghost text-sm p-1 text-danger"
+                        aria-label="Excluir conta {{ acc.name }}"
+                        onclick="openModal('Confirmar Exclusão', 'Eliminar a conta {{ acc.name }} permanentemente?', () => this.form.submit())">
+                        🗑️
+                    </button>
+                </form>
+            </div>
+        </article>
+        {% else %}
+        <div class="card text-center p-5 text-muted col-span-full">
+            <p>Nenhuma conta cadastrada nesta família. Crie uma nova para começar a gerenciar os caixas.</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

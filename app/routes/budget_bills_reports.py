@@ -121,12 +121,16 @@ def index():
     family_id = current_user.family_id
     show        = request.args.get('show',  'pending')
     type_filter = request.args.get('type',  '')
+    q_filter    = request.args.get('q', '').strip()
 
     q = Bill.query.filter_by(family_id=family_id)
     if show == 'pending':
         q = q.filter_by(paid=False)
     if type_filter:
         q = q.filter_by(type=type_filter)
+    if q_filter:
+        q = q.filter(Bill.description.ilike(f'%{q_filter}%'))
+        
     bills = q.order_by(Bill.due_date).all()
 
     overdue_count    = sum(1 for b in bills if b.is_overdue)
@@ -136,7 +140,7 @@ def index():
 
     return render_template('bills/index.html',
         bills=bills, show=show, today=today,
-        type_filter=type_filter,
+        type_filter=type_filter, q_filter=q_filter,
         overdue_count=overdue_count, due_soon=due_soon,
         total_payable=total_payable, total_receivable=total_receivable)
 
@@ -151,32 +155,44 @@ def new():
         type_        = request.form.get('type', 'payable')
         scope        = request.form.get('scope', 'personal')
         recurring    = request.form.get('recurring') == 'on'
-        recur_months = request.form.get('recur_months', 1, type=int)
+        recur_rule   = request.form.get('recurrence_rule', 'monthly') # NEW FIELD in frontend
 
         if not description or not amount or not due_date_str:
             flash('Preencha todos os campos.', 'danger')
             return render_template('bills/form.html')
 
         base_date = date.fromisoformat(due_date_str)
+        
+        bill = Bill(
+            description=description,
+            amount=abs(amount),
+            due_date=base_date,
+            type=type_,
+            scope=scope,
+            paid=False,
+            user_id=current_user.id,
+            family_id=current_user.family_id
+        )
 
-        def make_bill(d):
-            return Bill(description=description, amount=abs(amount),
-                        due_date=d, type=type_, scope=scope,
-                        user_id=current_user.id, family_id=current_user.family_id)
-
-        db.session.add(make_bill(base_date))
-        if recurring and recur_months > 1:
+        if recurring:
             import calendar
-            for i in range(1, recur_months):
-                nm = base_date.month + i
+            bill.recurrence_rule = recur_rule
+            
+            # Predict the first iteration next date immediately to track
+            if recur_rule == 'monthly':
+                nm = base_date.month + 1
                 ny = base_date.year + (nm - 1) // 12
                 nm = ((nm - 1) % 12) + 1
                 max_day = calendar.monthrange(ny, nm)[1]
-                db.session.add(make_bill(date(ny, nm, min(base_date.day, max_day))))
+                bill.next_recurrence_date = date(ny, nm, min(base_date.day, max_day))
+            elif recur_rule == 'yearly':
+                ny = base_date.year + 1
+                max_day = calendar.monthrange(ny, base_date.month)[1]
+                bill.next_recurrence_date = date(ny, base_date.month, min(base_date.day, max_day))
 
+        db.session.add(bill)
         db.session.commit()
-        n = recur_months if recurring else 1
-        flash(f'{"Conta registada" if n == 1 else f"{n} contas recorrentes criadas"}!', 'success')
+        flash('Conta registada com sucesso!', 'success')
         return redirect(url_for('bills.index'))
     return render_template('bills/form.html')
 

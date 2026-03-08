@@ -4,7 +4,18 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
 
-db = SQLAlchemy()
+from sqlalchemy import MetaData
+
+convention = {
+    "ix": 'ix_%(column_0_label)s',
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s"
+}
+
+metadata = MetaData(naming_convention=convention)
+db = SQLAlchemy(metadata=metadata)
 
 
 class Family(db.Model):
@@ -19,6 +30,7 @@ class Family(db.Model):
     transactions = db.relationship('Transaction', back_populates='family')
     budgets = db.relationship('Budget', back_populates='family')
     bills = db.relationship('Bill', back_populates='family')
+    bank_accounts = db.relationship('BankAccount', back_populates='family')
 
 
 class User(UserMixin, db.Model):
@@ -59,6 +71,31 @@ class Category(db.Model):
     budgets = db.relationship('Budget', back_populates='category')
 
 
+class BankAccount(db.Model):
+    __tablename__ = 'bank_accounts'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(50), default='checking')  # checking, savings, investment
+    initial_balance = db.Column(db.Float, default=0.0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=False)
+    
+    family = db.relationship('Family', back_populates='bank_accounts')
+    transactions = db.relationship('Transaction', back_populates='account')
+
+    @property
+    def current_balance(self):
+        # In a real scenario you would sum the transactions in DB directly
+        balance = self.initial_balance
+        for t in self.transactions:
+            if t.type == 'income':
+                balance += t.amount
+            else:
+                balance -= t.amount
+        return balance
+
+
 class Transaction(db.Model):
     __tablename__ = 'transactions'
     id = db.Column(db.Integer, primary_key=True)
@@ -72,10 +109,12 @@ class Transaction(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
+    account_id = db.Column(db.Integer, db.ForeignKey('bank_accounts.id'), nullable=True)
 
     user = db.relationship('User', back_populates='transactions')
     family = db.relationship('Family', back_populates='transactions')
     category = db.relationship('Category', back_populates='transactions')
+    account = db.relationship('BankAccount', back_populates='transactions')
 
 
 class Budget(db.Model):
@@ -103,6 +142,10 @@ class Bill(db.Model):
     paid_at = db.Column(db.DateTime, nullable=True)
     type = db.Column(db.String(10), default='payable')  # 'payable' or 'receivable'
     scope = db.Column(db.String(10), default='personal')  # 'personal' or 'family'
+    
+    # Recurrence rules: None, 'monthly', 'yearly'
+    recurrence_rule = db.Column(db.String(20), nullable=True)
+    next_recurrence_date = db.Column(db.Date, nullable=True)
 
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     family_id = db.Column(db.Integer, db.ForeignKey('families.id'), nullable=False)

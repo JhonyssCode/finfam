@@ -3,49 +3,47 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <div class="page-title">{{ 'Editar conta' if bill else 'Nova conta' }}</div>
-    <div class="page-subtitle">{{ 'Atualize os dados da conta' if bill else 'Registe uma conta a pagar ou receber' }}</div>
+    <h1 class="page-title">{{ 'Editar conta' if bill else 'Nova conta' }}</h1>
+    <div class="page-subtitle">{{ 'Atualize os dados da conta' if bill else 'Registe uma conta a pagar ou receber' }}
+    </div>
   </div>
-  <a href="{{ url_for('bills.index') }}" class="btn btn-ghost">← Voltar</a>
+  <a href="{{ url_for('bills.index') }}" class="btn btn-ghost">
+    <span aria-hidden="true">←</span> Voltar
+  </a>
 </div>
 
-<div class="card" style="max-width:540px;">
+<div class="card mx-auto" style="max-width:540px;">
   <form method="POST">
     <div class="form-group">
-      <label class="form-label">Descrição</label>
-      <input type="text" name="description" class="form-control"
-        placeholder="ex: Renda de março"
-        value="{{ bill.description if bill else '' }}"
-        required autofocus>
+      <label for="desc-input" class="form-label">Descrição</label>
+      <input type="text" id="desc-input" name="description" class="form-control" placeholder="ex: Renda de março"
+        value="{{ bill.description if bill else '' }}" required autofocus>
     </div>
 
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Valor (R$)</label>
-        <input type="number" name="amount" class="form-control mono"
-          step="0.01" min="0.01" placeholder="0.00"
-          value="{{ bill.amount if bill else '' }}"
-          required>
+        <label for="amount-input" class="form-label">Valor (R$)</label>
+        <input type="number" id="amount-input" name="amount" class="form-control mono" step="0.01" min="0.01"
+          placeholder="0.00" value="{{ bill.amount if bill else '' }}" required>
       </div>
       <div class="form-group">
-        <label class="form-label">Data de vencimento</label>
-        <input type="date" name="due_date" class="form-control"
-          value="{{ bill.due_date.isoformat() if bill else '' }}"
-          required>
+        <label for="date-input" class="form-label">Data de vencimento</label>
+        <input type="date" id="date-input" name="due_date" class="form-control"
+          value="{{ bill.due_date.isoformat() if bill else '' }}" required>
       </div>
     </div>
 
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Tipo</label>
-        <select name="type" class="form-control">
+        <label for="type-select" class="form-label">Tipo</label>
+        <select id="type-select" name="type" class="form-control">
           <option value="payable" {% if bill and bill.type=='payable' %}selected{% endif %}>A pagar</option>
           <option value="receivable" {% if bill and bill.type=='receivable' %}selected{% endif %}>A receber</option>
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Âmbito</label>
-        <select name="scope" class="form-control">
+        <label for="scope-select" class="form-label">Âmbito</label>
+        <select id="scope-select" name="scope" class="form-control">
           <option value="personal" {% if not bill or bill.scope=='personal' %}selected{% endif %}>Pessoal</option>
           <option value="family" {% if bill and bill.scope=='family' %}selected{% endif %}>👨‍👩‍👧 Família</option>
         </select>
@@ -53,37 +51,52 @@
     </div>
 
     {% if not bill %}
-    <!-- Recurrence (only on create) -->
-    <div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:18px;">
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:500;">
-        <input type="checkbox" name="recurring" id="recurringCheck" onchange="toggleRecurrence(this)">
-        🔁 Conta recorrente (mensal)
+    <!-- Auto Recurrence (only on create) -->
+    <div class="form-group" style="padding:16px; border:1px solid var(--border); border-radius:var(--radius-sm);">
+      <label class="flex items-center gap-2 font-medium" style="cursor:pointer; font-size:14px;">
+        <input type="checkbox" name="recurring" id="recurringCheck" onchange="toggleRecurrence(this)"
+          aria-controls="recurrenceOptions">
+        <span aria-hidden="true">🔁</span> Automátizar recorrência (criar contas futuras sozinho)
       </label>
-      <div id="recurrenceOptions" style="display:none;margin-top:14px;">
-        <label class="form-label">Repetir durante quantos meses?</label>
-        <input type="number" name="recur_months" class="form-control" min="2" max="36" value="3" style="width:100px;">
-        <div style="font-size:12px;color:var(--muted);margin-top:6px;">Serão criadas múltiplas contas com a mesma data do dia em meses seguintes.</div>
+
+      <div id="recurrenceOptions" style="display:none;" class="mt-4" aria-live="polite">
+        <label for="recurrence-rule" class="form-label text-sm">Frequência da conta em background</label>
+        <select id="recurrence-rule" name="recurrence_rule" class="form-control" style="width: auto;">
+          <option value="monthly">Mensalmente</option>
+          <option value="yearly">Anualmente</option>
+        </select>
+        <div class="text-xs text-muted mt-2" id="recur-desc">
+          O sistema criará automaticamente e de forma invisível as contas equivalentes baseados no período assim que
+          esta for fechada/vencer.
+        </div>
       </div>
     </div>
     {% endif %}
 
-    <div style="display:flex;gap:10px;">
-      <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;">
+    <div class="flex gap-2">
+      <button type="submit" class="btn btn-primary w-full text-center">
         {{ 'Guardar alterações' if bill else 'Registar conta' }}
       </button>
+
       {% if bill %}
-      <form method="POST" action="{{ url_for('bills.delete', id=bill.id) }}"
-            onsubmit="return confirm('Eliminar esta conta?')" style="margin:0;">
-        <button type="submit" class="btn btn-danger">Eliminar</button>
-      </form>
+      <div class="flex ml-auto">
+        <button type="button" class="btn btn-danger"
+          onclick="document.getElementById('delete-form').dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}))">Eliminar</button>
+      </div>
       {% endif %}
     </div>
   </form>
+
+  {% if bill %}
+  <form id="delete-form" method="POST" action="{{ url_for('bills.delete', id=bill.id) }}"
+    data-confirm="Eliminar esta conta permanentemente?" style="display:none;">
+  </form>
+  {% endif %}
 </div>
 
 <script>
-function toggleRecurrence(cb) {
-  document.getElementById('recurrenceOptions').style.display = cb.checked ? 'block' : 'none';
-}
+  function toggleRecurrence(cb) {
+    document.getElementById('recurrenceOptions').style.display = cb.checked ? 'block' : 'none';
+  }
 </script>
 {% endblock %}

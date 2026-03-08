@@ -1,42 +1,53 @@
 {% extends 'base.html' %}
 {% block title %}Registar — FinFam{% endblock %}
 {% block content %}
-<div style="width:420px;">
-  <div style="text-align:center; margin-bottom:32px;">
-    <div style="font-size:32px; font-weight:700; color:var(--accent); letter-spacing:-1px;">💚 FinFam</div>
-    <div style="color:var(--muted); font-size:14px; margin-top:6px;">
-      {% if family %}Juntar-se a <strong style="color:var(--text)">{{ family.name }}</strong>{% else %}Criar nova família{% endif %}
+<div class="mx-auto" style="width:100%; max-width:420px;">
+  <header class="text-center mb-6">
+    <div class="text-income font-bold" style="font-size:32px; letter-spacing:-1px;" aria-hidden="true">💚 FinFam</div>
+    <div class="text-muted text-sm mt-2">
+      {% if family %}Juntar-se à família <strong class="text-base text-text">{{ family.name }}</strong>{% else %}Criar
+      nova família{% endif %}
     </div>
-  </div>
-  <div class="card">
-    <div class="card-title">{% if family %}Criar conta{% else %}Criar conta & família{% endif %}</div>
+  </header>
+
+  <main class="card">
+    <h1 class="card-title text-center" style="font-size:16px;">{% if family %}Criar conta{% else %}Criar conta &
+      família{% endif %}</h1>
     <form method="POST">
       <input type="hidden" name="invite_token" value="{{ invite_token or '' }}">
+
       <div class="form-group">
-        <label class="form-label">Nome</label>
-        <input type="text" name="name" class="form-control" required autofocus>
+        <label for="name" class="form-label">Nome</label>
+        <input type="text" id="name" name="name" class="form-control" autocomplete="name" required autofocus>
       </div>
+
       <div class="form-group">
-        <label class="form-label">Email</label>
-        <input type="email" name="email" class="form-control" required>
+        <label for="email" class="form-label">Email</label>
+        <input type="email" id="email" name="email" class="form-control" autocomplete="email" required>
       </div>
+
       <div class="form-group">
-        <label class="form-label">Password</label>
-        <input type="password" name="password" class="form-control" required minlength="6">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" id="password" name="password" class="form-control" autocomplete="new-password" required
+          minlength="6">
       </div>
+
       {% if not family %}
       <div class="form-group">
-        <label class="form-label">Nome da família</label>
-        <input type="text" name="family_name" class="form-control" placeholder="ex: Família Silva">
+        <label for="family_name" class="form-label">Nome da família</label>
+        <input type="text" id="family_name" name="family_name" class="form-control" placeholder="ex: Família Silva">
       </div>
       {% endif %}
-      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;">
+
+      <button type="submit" class="btn btn-primary w-full justify-center mt-2">
         {% if family %}Juntar-me à família{% else %}Criar conta{% endif %}
       </button>
     </form>
-    <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--muted);">
-      Já tem conta? <a href="{{ url_for('auth.login') }}" style="color:var(--accent3);">Entrar</a>
+
+    <div class="text-center mt-4 text-sm text-muted">
+      Já tem conta? <a href="{{ url_for('auth.login') }}" class="text-primary font-medium"
+        style="text-decoration:none;">Entrar</a>
     </div>
-  </div>
+  </main>
 </div>
 {% endblock %}
