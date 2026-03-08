@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Editar' if transaction else 'Nova' }} Transação — FinFam{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">{{ 'Editar transação' if transaction else 'Nova transação' }}</div>
+    <div class="page-subtitle">{{ 'Atualize os dados da transação' if transaction else 'Registe uma receita ou despesa' }}</div>
+  </div>
+  <a href="{{ url_for('transactions.index') }}" class="btn btn-ghost">← Voltar</a>
+</div>
+
+<div class="card" style="max-width:560px;">
+  <form method="POST">
+    <!-- Type toggle -->
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <div style="display:flex;gap:10px;">
+        {% set current_type = transaction.type if transaction else 'expense' %}
+        <label style="flex:1;cursor:pointer;">
+          <input type="radio" name="type" value="expense" {% if current_type == 'expense' %}checked{% endif %} style="display:none;" id="typeExpense">
+          <div class="type-btn" data-for="typeExpense" style="text-align:center;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:500;transition:all 0.15s;cursor:pointer;">
+            🔴 Despesa
+          </div>
+        </label>
+        <label style="flex:1;cursor:pointer;">
+          <input type="radio" name="type" value="income" {% if current_type == 'income' %}checked{% endif %} style="display:none;" id="typeIncome">
+          <div class="type-btn" data-for="typeIncome" style="text-align:center;padding:12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-weight:500;transition:all 0.15s;cursor:pointer;">
+            🟢 Receita
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <input type="text" name="description" class="form-control"
+        placeholder="ex: Supermercado Pingo Doce"
+        value="{{ transaction.description if transaction else '' }}"
+        required autofocus>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input type="number" name="amount" class="form-control mono"
+          step="0.01" min="0.01" placeholder="0.00"
+          value="{{ transaction.amount if transaction else '' }}"
+          required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input type="date" name="date" class="form-control"
+          value="{{ transaction.date.isoformat() if transaction else today.isoformat() }}"
+          required>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select name="category_id" class="form-control">
+          <option value="">— Sem categoria —</option>
+          {% for cat in categories %}
+          <option value="{{ cat.id }}" {% if transaction and transaction.category_id == cat.id %}selected{% endif %}>
+            {{ cat.icon }} {{ cat.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Âmbito</label>
+        <select name="scope" class="form-control">
+          <option value="personal" {% if not transaction or transaction.scope == 'personal' %}selected{% endif %}>Pessoal</option>
+          <option value="family" {% if transaction and transaction.scope == 'family' %}selected{% endif %}>👨‍👩‍👧 Família</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center;">
+        {{ 'Guardar alterações' if transaction else 'Registar transação' }}
+      </button>
+      {% if transaction %}
+      <form method="POST" action="{{ url_for('transactions.delete', id=transaction.id) }}"
+            onsubmit="return confirm('Eliminar esta transação?')" style="margin:0;">
+        <button type="submit" class="btn btn-danger">Eliminar</button>
+      </form>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<script>
+document.querySelectorAll('input[name="type"]').forEach(radio => {
+  radio.addEventListener('change', updateTypeButtons);
+});
+document.querySelectorAll('.type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById(btn.dataset.for).checked = true;
+    updateTypeButtons();
+  });
+});
+function updateTypeButtons() {
+  document.querySelectorAll('input[name="type"]').forEach(r => {
+    const btn = document.querySelector(`[data-for="${r.id}"]`);
+    if (r.checked) {
+      btn.style.borderColor = r.value === 'expense' ? 'var(--expense)' : 'var(--income)';
+      btn.style.background = r.value === 'expense' ? 'rgba(248,113,113,0.1)' : 'rgba(74,222,128,0.1)';
+      btn.style.color = r.value === 'expense' ? 'var(--expense)' : 'var(--income)';
+    } else {
+      btn.style.borderColor = 'var(--border)';
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text)';
+    }
+  });
+}
+updateTypeButtons();
+</script>
+{% endblock %}

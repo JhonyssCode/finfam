@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+{% block title %}Contas — FinFam{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Contas a pagar/receber</div>
+    <div class="page-subtitle">Gerencie os seus vencimentos</div>
+  </div>
+  <a href="{{ url_for('bills.new') }}" class="btn btn-primary">+ Nova conta</a>
+</div>
+
+<!-- Alert: due soon -->
+{% if due_soon %}
+<div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);border-radius:var(--radius);padding:14px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+  <span style="font-size:20px;">⏰</span>
+  <div>
+    <div style="font-weight:600;color:var(--warning);font-size:14px;">Vencimento próximo</div>
+    <div style="font-size:13px;color:var(--muted);margin-top:2px;">
+      {% for b in due_soon %}
+        <strong style="color:var(--text);">{{ b.description }}</strong> vence
+        {% if b.days_until_due == 0 %}hoje{% elif b.days_until_due == 1 %}amanhã{% else %}em {{ b.days_until_due }} dias{% endif %}
+        ({{ b.amount|brl }}){% if not loop.last %} · {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Alert: overdue -->
+{% if overdue_count %}
+<div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);border-radius:var(--radius);padding:14px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+  <span style="font-size:20px;">🚨</span>
+  <div>
+    <div style="font-weight:600;color:var(--expense);font-size:14px;">Conta{% if overdue_count > 1 %}s{% endif %} vencida{% if overdue_count > 1 %}s{% endif %}</div>
+    <div style="font-size:13px;color:var(--muted);margin-top:2px;">Tem {{ overdue_count }} conta{% if overdue_count > 1 %}s{% endif %} com vencimento em atraso.</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Summary totals -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+  <div style="background:rgba(248,113,113,0.07);border:1px solid rgba(248,113,113,0.2);border-radius:var(--radius);padding:14px 20px;">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">A pagar (pendente)</div>
+    <div class="mono" style="font-size:22px;font-weight:600;color:var(--expense);margin-top:4px;">{{ total_payable|brl }}</div>
+  </div>
+  <div style="background:rgba(74,222,128,0.07);border:1px solid rgba(74,222,128,0.2);border-radius:var(--radius);padding:14px 20px;">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">A receber (pendente)</div>
+    <div class="mono" style="font-size:22px;font-weight:600;color:var(--income);margin-top:4px;">{{ total_receivable|brl }}</div>
+  </div>
+</div>
+
+<!-- Filters + list -->
+<div class="card">
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+    <a href="{{ url_for('bills.index', show='pending', type=type_filter) }}" class="btn {% if show=='pending' %}btn-primary{% else %}btn-ghost{% endif %} btn-sm">Pendentes</a>
+    <a href="{{ url_for('bills.index', show='all', type=type_filter) }}" class="btn {% if show=='all' %}btn-primary{% else %}btn-ghost{% endif %} btn-sm">Todas</a>
+    <div style="width:1px;height:20px;background:var(--border);"></div>
+    <a href="{{ url_for('bills.index', show=show, type='') }}" class="btn {% if not type_filter %}btn-ghost{% else %}btn-ghost{% endif %} btn-sm" style="{% if not type_filter %}color:var(--text);{% endif %}">Todas</a>
+    <a href="{{ url_for('bills.index', show=show, type='payable') }}" class="btn btn-ghost btn-sm" style="{% if type_filter=='payable' %}color:var(--expense);border-color:var(--expense);{% endif %}">A pagar</a>
+    <a href="{{ url_for('bills.index', show=show, type='receivable') }}" class="btn btn-ghost btn-sm" style="{% if type_filter=='receivable' %}color:var(--income);border-color:var(--income);{% endif %}">A receber</a>
+  </div>
+
+  {% if bills %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Descrição</th>
+        <th>Tipo</th>
+        <th>Vencimento</th>
+        <th>Âmbito</th>
+        <th style="text-align:right">Valor</th>
+        <th>Estado</th>
+        <th style="width:120px;"></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for bill in bills %}
+    <tr style="{% if bill.is_overdue and not bill.paid %}background:rgba(248,113,113,0.04);{% endif %}">
+      <td style="font-weight:500;">{{ bill.description }}</td>
+      <td>
+        <span class="badge {% if bill.type=='payable' %}badge-expense{% else %}badge-income{% endif %}">
+          {{ 'A pagar' if bill.type=='payable' else 'A receber' }}
+        </span>
+      </td>
+      <td class="mono" style="font-size:13px;">
+        {% if not bill.paid %}
+          {% if bill.is_overdue %}
+            <span style="color:var(--expense);">⚠️ {{ bill.due_date.strftime('%d/%m/%Y') }}</span>
+          {% elif bill.days_until_due <= 7 %}
+            <span style="color:var(--warning);">⏰ {{ bill.due_date.strftime('%d/%m/%Y') }}</span>
+          {% else %}
+            <span style="color:var(--muted);">{{ bill.due_date.strftime('%d/%m/%Y') }}</span>
+          {% endif %}
+        {% else %}
+          <span style="color:var(--muted);">{{ bill.due_date.strftime('%d/%m/%Y') }}</span>
+        {% endif %}
+      </td>
+      <td>
+        <span class="badge badge-{{ bill.scope }}">{{ 'Pessoal' if bill.scope=='personal' else '👨‍👩‍👧 Família' }}</span>
+      </td>
+      <td style="text-align:right;" class="mono">{{ bill.amount|brl }}</td>
+      <td>
+        {% if bill.paid %}
+          <span class="badge badge-income">✓ Pago</span>
+          {% if bill.paid_at %}
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">{{ bill.paid_at.strftime('%d/%m') }}</div>
+          {% endif %}
+        {% elif bill.is_overdue %}
+          <span class="badge badge-overdue">Vencida</span>
+        {% else %}
+          <span class="badge" style="background:rgba(251,191,36,0.15);color:var(--warning);">Pendente</span>
+        {% endif %}
+      </td>
+      <td>
+        <div style="display:flex;gap:4px;justify-content:flex-end;">
+          {% if not bill.paid %}
+          <form method="POST" action="{{ url_for('bills.pay', id=bill.id) }}">
+            <button type="submit" class="btn btn-ghost btn-sm" title="Marcar como pago">✓</button>
+          </form>
+          {% else %}
+          <form method="POST" action="{{ url_for('bills.unpay', id=bill.id) }}">
+            <button type="submit" class="btn btn-ghost btn-sm" title="Desmarcar pagamento">↩</button>
+          </form>
+          {% endif %}
+          <a href="{{ url_for('bills.edit', id=bill.id) }}" class="btn btn-ghost btn-sm" title="Editar">✎</a>
+          <form method="POST" action="{{ url_for('bills.delete', id=bill.id) }}" onsubmit="return confirm('Eliminar esta conta?')">
+            <button type="submit" class="btn btn-danger btn-sm">✕</button>
+          </form>
+        </div>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon">📋</div>
+    <p>Nenhuma conta encontrada</p>
+    <a href="{{ url_for('bills.new') }}" class="btn btn-primary" style="margin-top:16px;">+ Adicionar conta</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

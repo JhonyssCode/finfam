@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Convidar — FinFam{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Convidar membros</div>
+    <div class="page-subtitle">Partilhe o link abaixo com os membros da família</div>
+  </div>
+</div>
+<div class="card" style="max-width:560px;">
+  <div class="card-title">Link de convite</div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <input type="text" class="form-control mono" value="{{ invite_url }}" id="inviteUrl" readonly style="font-size:12px;">
+    <button class="btn btn-primary" onclick="copyLink()" style="white-space:nowrap;">Copiar</button>
+  </div>
+  <div style="color:var(--muted);font-size:13px;margin-top:14px;">
+    ⚠️ Qualquer pessoa com este link pode criar uma conta na sua família. Partilhe apenas com pessoas de confiança.
+  </div>
+</div>
+<script>
+function copyLink() {
+  navigator.clipboard.writeText(document.getElementById('inviteUrl').value);
+  const btn = event.target;
+  btn.textContent = '✓ Copiado!';
+  setTimeout(() => btn.textContent = 'Copiar', 2000);
+}
+</script>
+{% endblock %}

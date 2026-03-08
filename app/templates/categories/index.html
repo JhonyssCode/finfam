@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% block title %}Categorias — FinFam{% endblock %}
+{% block extra_styles %}
+.color-swatch { width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.15s;flex-shrink:0; }
+.color-swatch.selected, .color-swatch:hover { border-color: white; transform: scale(1.15); }
+.icon-btn { padding:6px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;font-size:18px;transition:all 0.15s; }
+.icon-btn:hover, .icon-btn.selected { background:rgba(74,222,128,0.15);border-color:var(--accent); }
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <div class="page-title">Categorias</div>
+    <div class="page-subtitle">Personalize as categorias da sua família</div>
+  </div>
+</div>
+
+<div class="grid-2" style="align-items:start;">
+  <!-- Category list -->
+  <div class="card">
+    <div class="card-title">Categorias existentes</div>
+    {% if categories %}
+    <table class="table">
+      <thead><tr><th>Categoria</th><th>Cor</th><th></th></tr></thead>
+      <tbody>
+      {% for cat in categories %}
+      <tr>
+        <td>
+          <span style="font-size:20px;">{{ cat.icon }}</span>
+          <span style="margin-left:8px;font-weight:500;">{{ cat.name }}</span>
+        </td>
+        <td>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:16px;height:16px;border-radius:50%;background:{{ cat.color }};"></div>
+            <span class="mono" style="font-size:12px;color:var(--muted);">{{ cat.color }}</span>
+          </div>
+        </td>
+        <td>
+          <div style="display:flex;gap:4px;justify-content:flex-end;">
+            <button class="btn btn-ghost btn-sm" onclick="openEdit({{ cat.id }}, '{{ cat.name }}', '{{ cat.icon }}', '{{ cat.color }}')">✎</button>
+            <form method="POST" action="{{ url_for('categories.delete', id=cat.id) }}" onsubmit="return confirm('Eliminar categoria? As transações associadas ficam sem categoria.')">
+              <button type="submit" class="btn btn-danger btn-sm">✕</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><div class="icon">🏷️</div><p>Sem categorias</p></div>
+    {% endif %}
+  </div>
+
+  <!-- New / Edit category form -->
+  <div class="card" id="categoryFormCard">
+    <div class="card-title" id="formTitle">Nova categoria</div>
+    <form method="POST" id="categoryForm" action="{{ url_for('categories.new') }}">
+      <input type="hidden" name="_edit_id" id="editId">
+
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input type="text" name="name" id="catName" class="form-control" placeholder="ex: Saúde" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Ícone</label>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+          {% for icon in preset_icons %}
+          <button type="button" class="icon-btn" data-icon="{{ icon }}" onclick="selectIcon('{{ icon }}')">{{ icon }}</button>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="icon" id="selectedIcon" value="💰">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Cor</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;">
+          {% for color in preset_colors %}
+          <div class="color-swatch" style="background:{{ color }};" data-color="{{ color }}" onclick="selectColor('{{ color }}')"></div>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="color" id="selectedColor" value="#6366f1">
+      </div>
+
+      <!-- Preview -->
+      <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface2);border-radius:var(--radius-sm);margin-bottom:16px;">
+        <div id="previewDot" style="width:12px;height:12px;border-radius:50%;background:#6366f1;"></div>
+        <span id="previewIcon" style="font-size:20px;">💰</span>
+        <span id="previewName" style="font-weight:500;color:var(--muted);">Pré-visualização</span>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button type="submit" class="btn btn-primary" id="submitBtn" style="flex:1;justify-content:center;">Criar categoria</button>
+        <button type="button" class="btn btn-ghost" id="cancelBtn" style="display:none;" onclick="resetForm()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const editActions = {
+  {% for cat in categories %}
+  {{ cat.id }}: "{{ url_for('categories.edit', id=cat.id) }}",
+  {% endfor %}
+};
+
+function selectIcon(icon) {
+  document.getElementById('selectedIcon').value = icon;
+  document.getElementById('previewIcon').textContent = icon;
+  document.querySelectorAll('.icon-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.icon === icon);
+  });
+}
+
+function selectColor(color) {
+  document.getElementById('selectedColor').value = color;
+  document.getElementById('previewDot').style.background = color;
+  document.querySelectorAll('.color-swatch').forEach(s => {
+    s.classList.toggle('selected', s.dataset.color === color);
+  });
+}
+
+document.getElementById('catName').addEventListener('input', e => {
+  const preview = document.getElementById('previewName');
+  preview.textContent = e.target.value || 'Pré-visualização';
+  preview.style.color = e.target.value ? 'var(--text)' : 'var(--muted)';
+});
+
+function openEdit(id, name, icon, color) {
+  document.getElementById('formTitle').textContent = 'Editar categoria';
+  document.getElementById('catName').value = name;
+  document.getElementById('previewName').textContent = name;
+  document.getElementById('previewName').style.color = 'var(--text)';
+  selectIcon(icon);
+  selectColor(color);
+  document.getElementById('categoryForm').action = editActions[id];
+  document.getElementById('submitBtn').textContent = 'Guardar alterações';
+  document.getElementById('cancelBtn').style.display = 'inline-flex';
+  document.getElementById('categoryFormCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetForm() {
+  document.getElementById('formTitle').textContent = 'Nova categoria';
+  document.getElementById('catName').value = '';
+  document.getElementById('previewName').textContent = 'Pré-visualização';
+  document.getElementById('previewName').style.color = 'var(--muted)';
+  document.getElementById('categoryForm').action = "{{ url_for('categories.new') }}";
+  document.getElementById('submitBtn').textContent = 'Criar categoria';
+  document.getElementById('cancelBtn').style.display = 'none';
+}
+
+// Init default color selection
+selectColor('#6366f1');
+selectIcon('💰');
+</script>
+{% endblock %}

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}FinFam{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0e0f14;
+      --surface: #16181f;
+      --surface2: #1e2028;
+      --border: #2a2d3a;
+      --text: #e8eaf0;
+      --muted: #6b7080;
+      --accent: #4ade80;
+      --accent2: #f87171;
+      --accent3: #60a5fa;
+      --income: #4ade80;
+      --expense: #f87171;
+      --warning: #fbbf24;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+    }
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      min-height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 0;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+    .sidebar-logo {
+      padding: 0 24px 28px;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sidebar-logo span { color: var(--text); }
+    .sidebar-nav { flex: 1; }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 24px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.15s;
+      border-left: 2px solid transparent;
+    }
+    .nav-item:hover { color: var(--text); background: var(--surface2); }
+    .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(74,222,128,0.06); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .user-info { color: var(--muted); margin-bottom: 6px; }
+    .user-name { color: var(--text); font-weight: 500; font-size: 14px; }
+    .family-badge {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--accent);
+      background: rgba(74,222,128,0.1);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .logout-link { display: block; margin-top: 10px; color: var(--muted); font-size: 13px; text-decoration: none; }
+    .logout-link:hover { color: var(--expense); }
+    /* Main */
+    .main {
+      margin-left: 220px;
+      flex: 1;
+      padding: 32px 36px;
+      min-height: 100vh;
+    }
+    .page-header {
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .page-title { font-size: 22px; font-weight: 600; letter-spacing: -0.4px; }
+    .page-subtitle { color: var(--muted); font-size: 14px; margin-top: 2px; }
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    /* Stats grid */
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+    }
+    .stat-label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; }
+    .stat-value { font-size: 28px; font-weight: 600; letter-spacing: -1px; margin-top: 6px; font-family: 'DM Mono', monospace; }
+    .stat-value.income { color: var(--income); }
+    .stat-value.expense { color: var(--expense); }
+    .stat-value.balance-pos { color: var(--income); }
+    .stat-value.balance-neg { color: var(--expense); }
+    /* Grid layouts */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    /* Alerts */
+    .alert {
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .alert-success { background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.3); color: var(--income); }
+    .alert-danger { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3); color: var(--expense); }
+    .alert-warning { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: var(--warning); }
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+    .btn-primary { background: var(--accent); color: #0e0f14; }
+    .btn-primary:hover { background: #22c55e; }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+    .btn-danger { background: rgba(248,113,113,0.15); color: var(--expense); border: 1px solid rgba(248,113,113,0.3); }
+    .btn-danger:hover { background: rgba(248,113,113,0.25); }
+    .btn-sm { padding: 5px 12px; font-size: 13px; }
+    /* Table */
+    .table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .table th { text-align: left; padding: 10px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); border-bottom: 1px solid var(--border); font-weight: 500; }
+    .table td { padding: 13px 16px; border-bottom: 1px solid rgba(42,45,58,0.5); }
+    .table tr:last-child td { border-bottom: none; }
+    .table tr:hover td { background: rgba(255,255,255,0.02); }
+    /* Form */
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 6px; }
+    .form-control {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      transition: border-color 0.15s;
+    }
+    .form-control:focus { outline: none; border-color: var(--accent3); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge-income { background: rgba(74,222,128,0.15); color: var(--income); }
+    .badge-expense { background: rgba(248,113,113,0.15); color: var(--expense); }
+    .badge-personal { background: rgba(96,165,250,0.15); color: var(--accent3); }
+    .badge-family { background: rgba(251,191,36,0.15); color: var(--warning); }
+    .badge-overdue { background: rgba(248,113,113,0.2); color: var(--expense); }
+    /* Amount */
+    .amount-income { color: var(--income); font-family: 'DM Mono', monospace; font-size: 14px; }
+    .amount-expense { color: var(--expense); font-family: 'DM Mono', monospace; font-size: 14px; }
+    /* Progress bar */
+    .progress { background: var(--surface2); border-radius: 4px; height: 6px; overflow: hidden; }
+    .progress-bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
+    /* Mono */
+    .mono { font-family: 'DM Mono', monospace; }
+    /* Pagination */
+    .pagination { display: flex; gap: 8px; align-items: center; margin-top: 20px; }
+    .pagination a, .pagination span {
+      padding: 6px 12px; border-radius: var(--radius-sm); font-size: 13px;
+      border: 1px solid var(--border); color: var(--muted); text-decoration: none;
+    }
+    .pagination a:hover { color: var(--text); }
+    .pagination .current { background: var(--accent); color: #0e0f14; border-color: var(--accent); }
+    /* Empty state */
+    .empty-state { text-align: center; padding: 48px 24px; color: var(--muted); }
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+  </style>
+  {% block extra_styles %}{% endblock %}
+</head>
+<body>
+{% if current_user.is_authenticated %}
+<nav class="sidebar">
+  <div class="sidebar-logo">💚 <span>Fin</span>Fam</div>
+  <div class="sidebar-nav">
+    <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
+      <span class="icon">📊</span> Dashboard
+    </a>
+    <a href="{{ url_for('transactions.index') }}" class="nav-item {% if 'transactions' in request.endpoint %}active{% endif %}">
+      <span class="icon">↔️</span> Transações
+    </a>
+    <a href="{{ url_for('budget.index') }}" class="nav-item {% if 'budget' in request.endpoint %}active{% endif %}">
+      <span class="icon">🎯</span> Orçamento
+    </a>
+    <a href="{{ url_for('bills.index') }}" class="nav-item {% if 'bills' in request.endpoint %}active{% endif %}">
+      <span class="icon">📋</span> Contas
+    </a>
+    <a href="{{ url_for('reports.index') }}" class="nav-item {% if 'reports' in request.endpoint %}active{% endif %}">
+      <span class="icon">📈</span> Relatórios
+    </a>
+    <a href="{{ url_for('categories.index') }}" class="nav-item {% if 'categories' in request.endpoint %}active{% endif %}">
+      <span class="icon">🏷️</span> Categorias
+    </a>
+    {% if current_user.is_admin %}
+    <a href="{{ url_for('auth.invite') }}" class="nav-item {% if request.endpoint == 'auth.invite' %}active{% endif %}">
+      <span class="icon">👥</span> Convidar
+    </a>
+    {% endif %}
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-name">{{ current_user.name }}</div>
+    {% if current_user.family %}
+    <span class="family-badge">{{ current_user.family.name }}</span>
+    {% endif %}
+    <a href="{{ url_for('auth.logout') }}" class="logout-link">← Sair</a>
+  </div>
+</nav>
+{% endif %}
+
+<main class="main" {% if not current_user.is_authenticated %}style="margin-left:0;display:flex;align-items:center;justify-content:center;"{% endif %}>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>
